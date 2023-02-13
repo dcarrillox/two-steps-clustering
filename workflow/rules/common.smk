@@ -2,23 +2,17 @@ configfile: "config/config.yaml"
 
 
 def gather_msas(wildcards):
-    checkpoint_output = checkpoints.create_faa_clusters.get(**wildcards).output[0]
+    checkpoint_output = checkpoints.faa_subfamily.get(**wildcards).output[0]
 
-    print(checkpoint_output)
-    results_dir = config["results_dir"]
-
-    clusters_msas = expand(results_dir + "/0_clustering/clusters_msa/{cluster}.mafft",
-                    cluster=glob_wildcards(f"{checkpoint_output}/{{cluster}}.faa").cluster,
+    faa_subfamilies = expand("results/0_mmseqs/subfamilies_msa/{subfam}.mafft",
+                    subfam=glob_wildcards(f"{checkpoint_output}/{{subfam}}.faa").subfam,
                     )
-    return clusters_msas
+    return faa_subfamilies
 
-def aggregate_final(wildcards):
-    checkpoint_output = checkpoints.create_faa_clusters.get(**wildcards).output[0]
-    print(checkpoint_output)
+def gather_hhblits(wildcards):
+    checkpoint_output = checkpoints.faa_subfamily.get(**wildcards).output[0]
 
-    results_dir = config["results_dir"]
-
-    clusters_hhr = expand(results_dir + "/1_hhblits/results/{cluster}.hhr",
-                    cluster=glob_wildcards(f"{checkpoint_output}/{{cluster}}.faa").cluster,
+    hhblits_family = expand("results/1_hhblits/results/{subfam}.hhr",
+                    subfam=glob_wildcards(f"{checkpoint_output}/{{subfam}}.faa").subfam,
                     )
-    return clusters_hhr
+    return hhblits_family

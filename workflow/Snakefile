@@ -4,12 +4,10 @@ include: "rules/common.smk"
 configfile: "config/config.yaml"
 
 
-results_dir = config["results_dir"]
-os.system(f"mkdir -p {results_dir}")
-
 rule all:
     input:
-        results_dir + "/done"
+        "results/protein_clustering_results.tsv"
 
 include: "rules/mmseqs.smk"
 include: "rules/hhblits.smk"
+include: "rules/mcl.smk"

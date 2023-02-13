@@ -1,66 +1,80 @@
-configfile: "config/config.yaml"
-
-results_dir = config["results_dir"]
-
-rule run_mmseqs2:
+rule mmseqs2_subfamily:
     input:
         config["proteome"]
     output:
-        results_dir + "/0_clustering/results/clustering.tsv"
+        "results/0_mmseqs/results/mmseqs_clustering.tsv"
+    conda:
+        "../envs/mmseqs.yml"
+    threads:
+        config["mmseqs2"].get("threads", 4)
+    log:
+        createdb = "log/mmseqs_createdb.stderr",
+        cluster = "log/mmseqs_cluster.stderr",
+        createtsv = "log/mmseqs_createtsv.stderr"
+
     params:
         db = "proteome",
-        db_path = results_dir + "/0_clustering/db/",
+        db_path = "results/0_mmseqs/db/",
         cluster_db = "clustering",
-        cluster_db_path = results_dir + "/0_clustering/results/",
-        min_seq_id = config["mmseqs2_params"]["min_seq_id"],
-        cov_mode = config["mmseqs2_params"]["cov_mode"],
-        sensitivity = config["mmseqs2_params"]["sensitivity"],
-        coverage = config["mmseqs2_params"]["coverage"]
-    threads: config["mmseqs2_params"]["threads"]
-    conda:
-        "../envs/env.yaml"
+        cluster_db_path = "results/0_mmseqs/results/",
+        min_seq_id = config["mmseqs2"].get("min_seq_id", 0),
+        cov_mode = config["mmseqs2"].get("cov_mode", 0),
+        sensitivity = config["mmseqs2"].get("sensitivity", 7.5),
+        coverage = config["mmseqs2"].get("coverage", 0.5),
+        evalue = config["mmseqs2"].get("evalue", 0.001),
+        cluster_mode = config["mmseqs2"].get("cluster_mode", 0)
     shell:
         '''
         mkdir -p tmp ;
         mkdir -p {params.db_path} ;
         mkdir -p {params.cluster_db_path} ;
 
-        mmseqs createdb {input} {params.db_path}/{params.db} ;
+        mmseqs createdb {input} {params.db_path}/{params.db} > {log.createdb};
 
         mmseqs cluster {params.db_path}/{params.db} {params.cluster_db_path}/{params.cluster_db} tmp \
         --min-seq-id {params.min_seq_id} \
         --cov-mode {params.cov_mode} \
         --threads {threads} \
         -s {params.sensitivity} \
-        -c {params.coverage} ;
-        rm -rf tmp/*
-        mmseqs createtsv {params.db_path}/{params.db} {params.db_path}/{params.db} {params.cluster_db_path}/{params.cluster_db} {output}
+        -c {params.coverage} > {log.cluster};
 
+        mmseqs createtsv {params.db_path}/{params.db} {params.db_path}/{params.db} {params.cluster_db_path}/{params.cluster_db} {output} > {log.createtsv}
+
+        rm -rf tmp/*
         '''
 
 
-checkpoint create_faa_clusters:
+checkpoint faa_subfamily:
     input:
-        rules.run_mmseqs2.output
+        rules.mmseqs2_subfamily.output
     output:
-        directory(results_dir + "/0_clustering/clusters_faa")
+        directory("results/0_mmseqs/subfamilies_faa"),
+        "results/0_mmseqs/subfamilies_summary.tsv"
+    conda:
+        "../envs/mmseqs.yml"
     params:
-        script = "workflow/scripts/1_mmseqs2tsv_to_faa.py",
-        faa_all = config["proteome"]
-    conda:
-        "../envs/env.yaml"
+        script = "workflow/scripts/mmseqstsv_to_faa.py",
+        all_proteins = config["proteome"],
+        out_faa_dir = "results/0_mmseqs/subfamilies_faa"
     shell:
-        "mkdir -p {output}; python {params.script} -t {input} -f {params.faa_all} -o {output}"
+        '''
+        mkdir -p {output[0]}
+        python {params.script} \
+        -t {input} \
+        -f {params.all_proteins} \
+        -o {params.out_faa_dir} \
+        -s {output[1]}
+        '''
 
 
-
-rule msa_clusters:
+rule mafft_subfamily:
     input:
-        results_dir + "/0_clustering/clusters_faa/{cluster}.faa"
+        "results/0_mmseqs/subfamilies_faa/{subfam}.faa"
     output:
-        results_dir + "/0_clustering/clusters_msa/{cluster}.mafft"
-    threads: 40
+        "results/0_mmseqs/subfamilies_msa/{subfam}.mafft"
     conda:
-        "../envs/env.yaml"
+        "../envs/mmseqs.yml"
+    threads:
+        config["mafft"].get("threads", 4)
     shell:
         "mafft-fftnsi --quiet --maxiterate 200 --thread {threads} {input} > {output}"

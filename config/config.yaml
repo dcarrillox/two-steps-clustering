@@ -1,10 +1,22 @@
-proteome: "2k_test.faa"
+proteome: "test.faa"
 
-results_dir: "test_2k"
-
-mmseqs2_params:
+mmseqs2:
   min_seq_id: 0
-  coverage: 0.8
-  cov_mode: 1
+  coverage: 0.5
+  cov_mode: 0
   sensitivity: 7.5
-  threads: 90
+  evalue: 0.001
+  cluster_mode: 0
+  threads: 4
+
+mafft:
+  threads: 4
+
+hhblits:
+  threads: 4
+  coverage: 0.5
+  probability: 90
+
+mcl:
+  inflation: 2
+  threads: 2
