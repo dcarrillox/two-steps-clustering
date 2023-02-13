@@ -1,12 +1,12 @@
 # two-steps-clustering
 Snakemake pipeline to cluster proteomes in two steps with [MMseqs2](https://github.com/soedinglab/MMseqs2),
-, [MAFFT](https://mafft.cbrc.jp/alignment/software/algorithms/algorithms.html),
+[MAFFT](https://mafft.cbrc.jp/alignment/software/algorithms/algorithms.html),
 [HHsuite](https://github.com/soedinglab/hh-suite) and [MCL](http://micans.org/mcl/#:~:text=The%20MCL%20algorithm%20is%20short,in%20bioinformatics%20and%20other%20disciplines.):
 
 1) Proteins are clustered into subfamilies in a first round using MMseq2.
 2) For each subfamily, a MSA is generated using MAFTT.
 3) MSA profiles are compared all-vs-all using hhblits.
-4) Subfamilies are clustered using MCL based on probability and coverage obtained
+4) Subfamilies are clustered into families using MCL based on probability and coverage obtained
 with hhblits.
 
 
