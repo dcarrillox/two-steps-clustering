@@ -49,9 +49,17 @@ def readingHhrFile(hhr_filename, coverage_threshold, probs_threshold, seqs_subfa
         if line.startswith("No 1\n"):
             last = i -1
 
+    # get target complete ids
+    target_ids = dict()
+    for i in range(last, len(lines)-1):
+        if lines[i].startswith("No ") and lines[i+1].startswith(">"):
+            n_id = lines[i].strip().split(" ")[1]
+            complete_id = lines[i+1].strip().replace(">", "")
+            target_ids[n_id] = complete_id
+
     for line in lines[9:last]:
         fields = line.strip().split()
-        target = seqs_subfam[fields[1]]
+        target = seqs_subfam[target_ids[fields[0]]]
         if "-" not in fields[-1]:
             values = fields[-9:]
             values[-1] = values[-1].replace("(", "").replace(")", "")
@@ -88,7 +96,6 @@ def main():
 
     subfam_faas = glob.glob(f"{args.subfam_faa_dir}/*.faa")
     seqs_subfam = {record.id:os.path.basename(file).replace(".faa", "") for file in subfam_faas for record in SeqIO.parse(file, "fasta") }
-
 
     hhr_files = sorted(glob.glob(f"{args.hhblits_dir}/*.hhr"))
     edges_weights = dict()
